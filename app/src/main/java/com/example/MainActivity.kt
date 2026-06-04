@@ -67,6 +67,12 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
     else -> Color(0xFFF59E0B) // Amber for processing
   }
 
+  // Check if installation is currently active
+  val isInstalling = installStatus != "Idle" &&
+      !installStatus.contains("successful", ignoreCase = true) &&
+      !installStatus.contains("failed", ignoreCase = true) &&
+      !installStatus.contains("error", ignoreCase = true)
+
   Column(
     modifier = modifier
       .verticalScroll(rememberScrollState())
@@ -92,12 +98,20 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
         ),
       contentAlignment = Alignment.Center
     ) {
-      Icon(
-        imageVector = Icons.Default.PlayArrow,
-        contentDescription = "Install Icon",
-        modifier = Modifier.size(44.dp),
-        tint = Color.White
-      )
+      if (isInstalling) {
+        CircularProgressIndicator(
+          color = Color.White,
+          strokeWidth = 3.dp,
+          modifier = Modifier.size(36.dp)
+        )
+      } else {
+        Icon(
+          imageVector = Icons.Default.ArrowDownward,
+          contentDescription = "Install Icon",
+          modifier = Modifier.size(44.dp),
+          tint = Color.White
+        )
+      }
     }
 
     // Title & Explanation
@@ -161,34 +175,51 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
     // Modern Primary Trigger Button
     Button(
       onClick = {
-        PackageInstallReceiver.updateStatus("Initializing session installer...")
-        coroutineScope.launch {
-          AppSessionInstaller.installApp(context, "secondary_app.apk")
+        if (!isInstalling) {
+          PackageInstallReceiver.updateStatus("Initializing session installer...")
+          coroutineScope.launch {
+            AppSessionInstaller.installApp(context, "secondary_app.apk")
+          }
         }
       },
+      enabled = !isInstalling,
       modifier = Modifier
         .fillMaxWidth()
         .height(58.dp)
-        .shadow(4.dp, shape = RoundedCornerShape(18.dp)),
+        .shadow(if (isInstalling) 0.dp else 4.dp, shape = RoundedCornerShape(18.dp)),
       shape = RoundedCornerShape(18.dp),
       colors = ButtonDefaults.buttonColors(
-        containerColor = MaterialTheme.colorScheme.primary,
-        contentColor = Color.White
+        containerColor = if (isInstalling) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary,
+        contentColor = Color.White,
+        disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+        disabledContentColor = Color.White
       )
     ) {
       Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
       ) {
-        Icon(
-          imageVector = Icons.Default.PlayArrow,
-          contentDescription = "Execute",
-          modifier = Modifier.size(24.dp)
-        )
-        Text(
-          text = "Execute Local Install",
-          style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
+        if (isInstalling) {
+          CircularProgressIndicator(
+            color = Color.White,
+            strokeWidth = 2.5.dp,
+            modifier = Modifier.size(20.dp)
+          )
+          Text(
+            text = "Installing Package...",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+        } else {
+          Icon(
+            imageVector = Icons.Default.ArrowDownward,
+            contentDescription = "Execute",
+            modifier = Modifier.size(24.dp)
+          )
+          Text(
+            text = "Execute Local Install",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+          )
+        }
       }
     }
 
