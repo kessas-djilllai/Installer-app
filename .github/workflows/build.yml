@@ -22,11 +22,6 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
-    - name: Generate Gradle Wrapper
-      run: |
-        # In case the repository doesn't have gradlew committed
-        gradle wrapper --gradle-version 8.2
-
     - name: Make Gradle Wrapper Executable
       run: chmod +x gradlew
 
@@ -52,7 +47,7 @@ jobs:
         echo "RELEASE_KEY_PASSWORD=defaultKeyPass123" >> local.properties
 
     - name: Build Debug & Release APK
-      run: ./gradlew assembleDebug assembleRelease
+      run: ./gradlew assembleDebug assembleRelease --no-configuration-cache --no-build-cache --no-daemon
 
     - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
