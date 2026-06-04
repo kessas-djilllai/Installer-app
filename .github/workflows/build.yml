@@ -65,13 +65,13 @@ jobs:
     - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: AppInstaller-Debug
+        name: Z-Installer-Debug
         path: app/build/outputs/apk/debug/app-debug.apk
 
     - name: Upload Release APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: AppInstaller-Release-Signed
+        name: Z-Installer-Release
         path: |
           app/build/outputs/apk/release/app-release.apk
           app/build/outputs/apk/release/app-release-unsigned.apk
