@@ -24,6 +24,13 @@ android {
 
   signingConfigs {
     create("release") {
+      // 1. Try environment variables first
+      val envStoreFile = System.getenv("RELEASE_STORE_FILE") ?: System.getenv("KEYSTORE_PATH")
+      val envStorePassword = System.getenv("RELEASE_STORE_PASSWORD") ?: System.getenv("STORE_PASSWORD")
+      val envKeyAlias = System.getenv("RELEASE_KEY_ALIAS") ?: System.getenv("KEY_ALIAS")
+      val envKeyPassword = System.getenv("RELEASE_KEY_PASSWORD") ?: System.getenv("KEY_PASSWORD")
+
+      // 2. Try loading local.properties
       val localProperties = Properties().apply {
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
@@ -31,33 +38,46 @@ android {
         }
       }
 
-      val keystorePath = System.getenv("KEYSTORE_PATH")
-        ?: localProperties.getProperty("RELEASE_STORE_FILE")
-        ?: "my-upload-key.jks"
+      val propStoreFile = localProperties.getProperty("RELEASE_STORE_FILE")
+      val propStorePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
+      val propKeyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
+      val propKeyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
 
-      var keystoreFile = if (file(keystorePath).isAbsolute) {
-        file(keystorePath)
-      } else {
-        val rootFile = rootProject.file(keystorePath)
-        val appFile = file(keystorePath)
-        if (rootFile.exists()) rootFile else appFile
-      }
+      // 3. Determine the actual lookup/fallback mechanism
+      val keystorePath = envStoreFile ?: propStoreFile ?: "my-upload-key.jks"
 
-      if (keystoreFile.exists()) {
-        storeFile = keystoreFile
-        storePassword = System.getenv("STORE_PASSWORD")
-          ?: localProperties.getProperty("RELEASE_STORE_PASSWORD")
-          ?: ""
-        keyAlias = System.getenv("KEY_ALIAS")
-          ?: localProperties.getProperty("RELEASE_KEY_ALIAS")
-          ?: "upload"
-        keyPassword = System.getenv("KEY_PASSWORD")
-          ?: localProperties.getProperty("RELEASE_KEY_PASSWORD")
-          ?: ""
+      // We list potential locations in order of preference
+      val possibleFiles = listOf(
+        if (file(keystorePath).isAbsolute) file(keystorePath) else rootProject.file(keystorePath),
+        file(keystorePath),
+        rootProject.file("default_keystore.jks"),
+        file("default_keystore.jks"),
+        rootProject.file("debug.keystore"),
+        file("debug.keystore"),
+        file("${rootDir}/debug.keystore")
+      )
+
+      val resolvedFile = possibleFiles.firstOrNull { it.exists() }
+
+      if (resolvedFile != null) {
+        storeFile = resolvedFile
+        if (resolvedFile.name.contains("debug.keystore")) {
+          storePassword = "android"
+          keyAlias = "androiddebugkey"
+          keyPassword = "android"
+        } else if (resolvedFile.name.contains("default_keystore.jks")) {
+          storePassword = envStorePassword ?: propStorePassword ?: "defaultKeystorePass123"
+          keyAlias = envKeyAlias ?: propKeyAlias ?: "defaultAlias"
+          keyPassword = envKeyPassword ?: propKeyPassword ?: "defaultKeyPass123"
+        } else {
+          storePassword = envStorePassword ?: propStorePassword ?: ""
+          keyAlias = envKeyAlias ?: propKeyAlias ?: "upload"
+          keyPassword = envKeyPassword ?: propKeyPassword ?: ""
+        }
       } else {
-        // Fall back to debug keystore if the specified release key file is not present
-        val rootDebugKeystore = rootProject.file("debug.keystore")
-        storeFile = if (rootDebugKeystore.exists()) rootDebugKeystore else file("${rootDir}/debug.keystore")
+        // Absolute fallback to a dummy configuration so configuration stage always completes
+        val fallbackFile = rootProject.file("debug.keystore")
+        storeFile = if (fallbackFile.exists()) fallbackFile else file("${rootDir}/debug.keystore")
         storePassword = "android"
         keyAlias = "androiddebugkey"
         keyPassword = "android"
