@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
@@ -22,11 +24,44 @@ android {
 
   signingConfigs {
     create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+      val localProperties = Properties().apply {
+        val localPropertiesFile = rootProject.file("local.properties")
+        if (localPropertiesFile.exists()) {
+          localPropertiesFile.inputStream().use { load(it) }
+        }
+      }
+
+      val keystorePath = System.getenv("KEYSTORE_PATH")
+        ?: localProperties.getProperty("RELEASE_STORE_FILE")
+        ?: "my-upload-key.jks"
+
+      var keystoreFile = if (file(keystorePath).isAbsolute) {
+        file(keystorePath)
+      } else {
+        val rootFile = rootProject.file(keystorePath)
+        val appFile = file(keystorePath)
+        if (rootFile.exists()) rootFile else appFile
+      }
+
+      if (keystoreFile.exists()) {
+        storeFile = keystoreFile
+        storePassword = System.getenv("STORE_PASSWORD")
+          ?: localProperties.getProperty("RELEASE_STORE_PASSWORD")
+          ?: ""
+        keyAlias = System.getenv("KEY_ALIAS")
+          ?: localProperties.getProperty("RELEASE_KEY_ALIAS")
+          ?: "upload"
+        keyPassword = System.getenv("KEY_PASSWORD")
+          ?: localProperties.getProperty("RELEASE_KEY_PASSWORD")
+          ?: ""
+      } else {
+        // Fall back to debug keystore if the specified release key file is not present
+        val rootDebugKeystore = rootProject.file("debug.keystore")
+        storeFile = if (rootDebugKeystore.exists()) rootDebugKeystore else file("${rootDir}/debug.keystore")
+        storePassword = "android"
+        keyAlias = "androiddebugkey"
+        keyPassword = "android"
+      }
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
