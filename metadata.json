@@ -1,0 +1,6 @@
+{
+  "name": "App Installer",
+  "description": "A lightweight local App-Installer utility.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

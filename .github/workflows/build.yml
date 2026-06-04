@@ -1,0 +1,68 @@
+name: Android CI/CD Build
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    name: Build & Sign APK
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: 'gradle'
+
+    - name: Generate Gradle Wrapper
+      run: |
+        # In case the repository doesn't have gradlew committed
+        gradle wrapper --gradle-version 8.2
+
+    - name: Make Gradle Wrapper Executable
+      run: chmod +x gradlew
+
+    - name: Create Self-Signed Default Keystore
+      run: |
+        # Generate a secure dummy/default self-signed keystore for building on GitHub Actions
+        keytool -genkeypair -v \
+          -keystore app/default_keystore.jks \
+          -alias defaultAlias \
+          -keyalg RSA \
+          -keysize 2048 \
+          -validity 10000 \
+          -storepass defaultKeystorePass123 \
+          -keypass defaultKeyPass123 \
+          -dname "CN=AppInstaller, OU=Utility, O=AIStudio, L=Global, S=Global, C=US"
+
+    - name: Inject Keystore Properties into Build
+      run: |
+        # Inject the generated signing details into local properties
+        echo "RELEASE_STORE_FILE=default_keystore.jks" >> local.properties
+        echo "RELEASE_STORE_PASSWORD=defaultKeystorePass123" >> local.properties
+        echo "RELEASE_KEY_ALIAS=defaultAlias" >> local.properties
+        echo "RELEASE_KEY_PASSWORD=defaultKeyPass123" >> local.properties
+
+    - name: Build Debug & Release APK
+      run: ./gradlew assembleDebug assembleRelease
+
+    - name: Upload Debug APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: AppInstaller-Debug
+        path: app/build/outputs/apk/debug/app-debug.apk
+
+    - name: Upload Release APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: AppInstaller-Release-Signed
+        path: app/build/outputs/apk/release/app-release-unsigned.apk # Default falls back here, or copy custom signed
+        if-no-files-found: warn
