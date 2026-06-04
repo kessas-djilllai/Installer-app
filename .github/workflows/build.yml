@@ -48,7 +48,7 @@ jobs:
           -keysize 2048 \
           -validity 10000 \
           -storepass defaultKeystorePass123 \
-          -keypass defaultKeyPass123 \
+          -keypass defaultKeystorePass123 \
           -dname "CN=AppInstaller, OU=Utility, O=AIStudio, L=Global, S=Global, C=US"
 
     - name: Inject Keystore Properties into Build
@@ -57,7 +57,7 @@ jobs:
         echo "RELEASE_STORE_FILE=default_keystore.jks" >> local.properties
         echo "RELEASE_STORE_PASSWORD=defaultKeystorePass123" >> local.properties
         echo "RELEASE_KEY_ALIAS=defaultAlias" >> local.properties
-        echo "RELEASE_KEY_PASSWORD=defaultKeyPass123" >> local.properties
+        echo "RELEASE_KEY_PASSWORD=defaultKeystorePass123" >> local.properties
 
     - name: Build Debug & Release APK
       run: ./gradlew assembleDebug assembleRelease --no-configuration-cache --no-build-cache --no-daemon

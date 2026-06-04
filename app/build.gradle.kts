@@ -38,10 +38,10 @@ android {
         }
       }
 
-      val propStoreFile = localProperties.getProperty("RELEASE_STORE_FILE")
-      val propStorePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")
-      val propKeyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")
-      val propKeyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")
+      val propStoreFile = localProperties.getProperty("RELEASE_STORE_FILE")?.trim()
+      val propStorePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD")?.trim()
+      val propKeyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS")?.trim()
+      val propKeyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD")?.trim()
 
       // 3. Determine the actual lookup/fallback mechanism
       val keystorePath = envStoreFile ?: propStoreFile ?: "my-upload-key.jks"
