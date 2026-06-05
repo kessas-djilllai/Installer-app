@@ -77,7 +77,7 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
 
   // Dynamic colors for status indicators
   val statusColor = when {
-    installStatus.contains("successful", ignoreCase = true) -> Color(0xFF10B981)
+    installStatus.contains("بنجاح", ignoreCase = true) || installStatus.contains("successful", ignoreCase = true) -> Color(0xFF10B981)
     installStatus.contains("error", ignoreCase = true) || installStatus.contains("failed", ignoreCase = true) -> Color(0xFFEF4444)
     installStatus == "Idle" -> MaterialTheme.colorScheme.primary
     else -> Color(0xFFF59E0B) // Amber for processing
@@ -85,7 +85,7 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
 
   // Check if installation is currently active
   val isInstalling = installStatus != "Idle" &&
-      !installStatus.contains("successful", ignoreCase = true) &&
+      !installStatus.contains("بنجاح", ignoreCase = true) && !installStatus.contains("successful", ignoreCase = true) &&
       !installStatus.contains("failed", ignoreCase = true) &&
       !installStatus.contains("error", ignoreCase = true)
 
@@ -159,7 +159,7 @@ fun AppInstallerScreen(modifier: Modifier = Modifier) {
         modifier = Modifier.padding(horizontal = 12.dp)
       ) {
         val statusIcon = when {
-          installStatus.contains("successful", ignoreCase = true) -> Icons.Default.Check
+          installStatus.contains("بنجاح", ignoreCase = true) || installStatus.contains("successful", ignoreCase = true) -> Icons.Default.Check
           installStatus.contains("error", ignoreCase = true) || installStatus.contains("failed", ignoreCase = true) -> Icons.Default.Warning
           else -> Icons.Default.Refresh
         }

@@ -43,7 +43,7 @@ class PackageInstallReceiver : BroadcastReceiver() {
                 }
             }
             PackageInstaller.STATUS_SUCCESS -> {
-                _installStatus.value = "Installation successful!"
+                _installStatus.value = "تم التثبيت بنجاح!\nيمكنك الآن إلغاء تثبيت تطبيق المثبت."
             }
             PackageInstaller.STATUS_FAILURE, PackageInstaller.STATUS_FAILURE_ABORTED,
             PackageInstaller.STATUS_FAILURE_BLOCKED, PackageInstaller.STATUS_FAILURE_CONFLICT,
