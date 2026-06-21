@@ -23,6 +23,15 @@ android {
   }
 
   signingConfigs {
+    getByName("debug") {
+      val rootDebugKeystore = rootProject.file("debug.keystore")
+      if (rootDebugKeystore.exists()) {
+        storeFile = rootDebugKeystore
+        storePassword = "android"
+        keyAlias = "androiddebugkey"
+        keyPassword = "android"
+      }
+    }
     create("release") {
       // 1. Try environment variables first
       val envStoreFile = System.getenv("RELEASE_STORE_FILE") ?: System.getenv("KEYSTORE_PATH")
@@ -83,13 +92,6 @@ android {
         keyPassword = "android"
       }
     }
-    create("debugConfig") {
-      val rootDebugKeystore = file("${rootDir}/debug.keystore")
-      storeFile = if (rootDebugKeystore.exists()) rootDebugKeystore else file("${System.getProperty("user.home")}/.android/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
-    }
   }
 
   buildTypes {
@@ -100,7 +102,7 @@ android {
       signingConfig = signingConfigs.getByName("release")
     }
     debug {
-      signingConfig = signingConfigs.getByName("debugConfig")
+      signingConfig = signingConfigs.getByName("debug")
     }
   }
   compileOptions {
